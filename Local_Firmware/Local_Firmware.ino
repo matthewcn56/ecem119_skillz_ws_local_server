@@ -7,6 +7,7 @@
 
 int keyIndex = 0;                // your network key Index number (needed only for WEP)
 const int led = LED_BUILTIN;
+int LED_STATE = 0;
 
 int status = WL_IDLE_STATUS;
 
@@ -82,6 +83,7 @@ void loop()
   }
 
   // Send serial input to websocket
+  digitalWrite(led, LED_STATE);
   webSocket.loop();
   if(Serial.available() > 0) {
     char c[] = {(char)Serial.read()};
@@ -91,10 +93,20 @@ void loop()
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   if(type == WStype_TEXT) {
-    if(payload[0] == '#'){
-      uint16_t brightness = (uint16_t) strtol((const char *) &payload[1], NULL, 10);
-      Serial.print("brightness= ");
-      Serial.println(brightness);
+    if(payload[0] == 'C'){
+      char mode = payload[1];
+      if(mode == '+'){
+        LED_STATE=HIGH;
+        Serial.println("Turning built-in LED On!");
+      }
+      else if(mode =='-'){
+        LED_STATE=LOW;
+        Serial.println("Turning built-in LED Off!");
+
+      }
+      else {
+        Serial.println("Error reading websocket request");
+      }
     }
     else {
       for(int i = 0; i < length; i++)

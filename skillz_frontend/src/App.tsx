@@ -14,6 +14,7 @@ enum ConnectionStatus {
 function App() {
   const [socketUrl, setSocketUrl] = useState("192.168.4.1");
   const [websocket, setWebsocket] = useState<null | WebSocket>(null);
+  const [ledState, setLEDState] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
     ConnectionStatus.Disconnected
   );
@@ -62,6 +63,30 @@ function App() {
     setMessageBuffer((prev) => prev + event.data);
   }
 
+  //"C+": client on, "C-": client off
+  function turnOnLED() {
+    if(websocket){
+      websocket.send("C+");
+      console.log("Turning on LED!");
+      setLEDState(true);
+    }
+    else {
+      console.log("NO WEBSOCKET");
+    }
+  }
+
+  function turnOffLED() {
+    if(websocket){
+      websocket.send("C-");
+      console.log("Turning off LED!");
+      setLEDState(false);
+
+    }
+    else {
+      console.log("NO WEBSOCKET");
+    }
+  }
+
   // TODO: show gateway and ip to user, show messages to user, allow led toggle switch
   // BUG: websocket doesn't close correctly when closed is called for whatever reason (means we can't reconnect after disconnecting)
   return (
@@ -87,10 +112,19 @@ function App() {
         </div>
       ) : (
         connectionStatus === ConnectionStatus.Connected && (
-          <div className="connection-manager">
-            <p>From Arduino: </p>
-            <Textarea minRows={3} value={messageBuffer} />
-            <Button onClick={() => closeWebSocket()}>Disconnect</Button>
+          <div>     
+            <div className="connection-manager">
+              <p>From Arduino: </p>
+              <Textarea minRows={3} value={messageBuffer} />
+              <Button onClick={() => closeWebSocket()}>Disconnect</Button>
+            </div>
+            <span>
+            <div className="led-strip">
+              <Button onClick={() => turnOnLED()}>Turn LED On</Button>
+              <Button onClick={() => turnOffLED()}>Turn LED Off</Button>
+            </div>
+            <p>Built in LED is: {ledState ? "on" : "off"}</p>
+            </span>
           </div>
         )
       )}

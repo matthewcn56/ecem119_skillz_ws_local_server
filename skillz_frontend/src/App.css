@@ -18,3 +18,8 @@
 .connection-prompt {
   width: 25vw;
 }
+
+.led-strip {
+  display: flex;
+  flex-direction: row;
+}
