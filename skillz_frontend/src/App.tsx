@@ -1,34 +1,47 @@
 import React, { useState, useEffect } from "react";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
+import { Textarea } from "./TextArea";
 import "./App.css";
 
 enum ConnectionStatus {
   Disconnected,
+  Disconnecting,
   Connecting,
   Connected,
 }
 
 function App() {
-  const [socketUrl, setSocketUrl] = useState("");
+  const [socketUrl, setSocketUrl] = useState("192.168.4.1");
   const [websocket, setWebsocket] = useState<null | WebSocket>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
     ConnectionStatus.Disconnected
   );
+  const [messageBuffer, setMessageBuffer] = useState<string>("");
+
+  useEffect(() => {
+    if (websocket === null) return;
+
+    // Thank you websocket api for boxing me into this insane workaround
+    websocket.onopen = onOpen;
+    websocket.onclose = onClose;
+    websocket.onmessage = onMessage;
+  }, [websocket]);
 
   function initWebSocket() {
-    console.log("Opening a WebSocket connection...");
     setConnectionStatus(ConnectionStatus.Connecting);
     const gateway = "ws://" + socketUrl + ":81/";
 
-    console.log("Gate way is: " + gateway);
+    console.log("Gateway is: " + gateway);
     setWebsocket(() => {
-      const newSocket = new WebSocket(gateway);
-      newSocket.onopen = onOpen;
-      newSocket.onclose = onClose;
-      newSocket.onmessage = onMessage;
-      return newSocket;
+      return new WebSocket(gateway);
     });
+  }
+
+  function closeWebSocket() {
+    setConnectionStatus(ConnectionStatus.Disconnecting);
+    setMessageBuffer("");
+    websocket?.close();
   }
 
   function onOpen(event: Event) {
@@ -38,7 +51,6 @@ function App() {
 
   function onClose(event: Event) {
     setConnectionStatus(ConnectionStatus.Disconnected);
-    console.log("Connection closed");
   }
 
   interface WSEvent {
@@ -46,23 +58,12 @@ function App() {
   }
 
   function onMessage(event: WSEvent) {
-    console.log("Data is: " + event.data);
+    console.log(event.data);
+    setMessageBuffer((prev) => prev + event.data);
   }
 
-  // const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl);
-  // const [messageHistory, setMessageHistory] = useState<string[]>([]);
-  // useEffect(() => {
-  //   if (lastMessage !== null) {
-  //     setMessageHistory((prev) => prev.concat(lastMessage.data));
-  //   }
-  // }, [lastMessage, setMessageHistory]);
-
-  // const handleClickChangeSocketUrl = useCallback(
-  //   (e: React.ChangeEvent<HTMLInputElement>) =>
-  //     setSocketUrl(e.target.value),
-  //   []
-  // );
-
+  // TODO: show gateway and ip to user, show messages to user, allow led toggle switch
+  // BUG: websocket doesn't close correctly when closed is called for whatever reason (means we can't reconnect after disconnecting)
   return (
     <div className="App">
       <p className="connection-status">{ConnectionStatus[connectionStatus]}</p>
@@ -87,8 +88,9 @@ function App() {
       ) : (
         connectionStatus === ConnectionStatus.Connected && (
           <div className="connection-manager">
-            <p>Messages: </p>
-            <Button>Disconnect</Button>
+            <p>From Arduino: </p>
+            <Textarea minRows={3} value={messageBuffer} />
+            <Button onClick={() => closeWebSocket()}>Disconnect</Button>
           </div>
         )
       )}

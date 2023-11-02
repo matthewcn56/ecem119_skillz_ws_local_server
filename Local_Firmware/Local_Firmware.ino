@@ -2,7 +2,6 @@
 
 #include "defines.h"  
 #include <WiFiNINA_Generic.h>
-#include <WiFiWebServer.h>
 #include <WebSocketsServer_Generic.h>
 
 
@@ -22,10 +21,6 @@ void printWiFiStatus()
   IPAddress ip = WiFi.localIP();
 
   Serial.print(F("IP Address: "));
-  Serial.println(ip);
-
-  // print where to go in a browser:
-  Serial.print(F("To see this page in action, open a browser to http://"));
   Serial.println(ip);
 }
 
@@ -104,7 +99,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
     else {
       for(int i = 0; i < length; i++)
       Serial.print((char)payload[i]);
-      Serial.println();
-    }  
+    }
+    Serial.println();
   }
 }
