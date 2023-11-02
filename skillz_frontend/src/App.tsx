@@ -1,16 +1,24 @@
-import React, {useState, useEffect} from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useState, useEffect } from "react";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import "./App.css";
+
+enum ConnectionStatus {
+  Disconnected,
+  Connecting,
+  Connected,
+}
 
 function App() {
-  const [socketUrl,setSocketUrl] = useState("");
+  const [socketUrl, setSocketUrl] = useState("");
   const [websocket, setWebsocket] = useState<null | WebSocket>(null);
-  useEffect(() => {
-    console.log(websocket);
-  }, [websocket]);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(
+    ConnectionStatus.Disconnected
+  );
 
   function initWebSocket() {
     console.log("Opening a WebSocket connection...");
+    setConnectionStatus(ConnectionStatus.Connecting);
     const gateway = "ws://" + socketUrl + ":81/";
 
     console.log("Gate way is: " + gateway);
@@ -24,14 +32,13 @@ function App() {
   }
 
   function onOpen(event: Event) {
-    console.log("Socket connection opened!");
+    setConnectionStatus(ConnectionStatus.Connected);
+    websocket?.send("Hello From Client!");
   }
 
   function onClose(event: Event) {
+    setConnectionStatus(ConnectionStatus.Disconnected);
     console.log("Connection closed");
-    //TODO: PUT BACK IN
-    //attempt to try connecting again
-    setTimeout(initWebSocket, 2000);
   }
 
   interface WSEvent {
@@ -42,8 +49,6 @@ function App() {
     console.log("Data is: " + event.data);
   }
 
-
-  
   // const { sendMessage, lastMessage, readyState } = useWebSocket(socketUrl);
   // const [messageHistory, setMessageHistory] = useState<string[]>([]);
   // useEffect(() => {
@@ -53,25 +58,40 @@ function App() {
   // }, [lastMessage, setMessageHistory]);
 
   // const handleClickChangeSocketUrl = useCallback(
-  //   (e: React.ChangeEvent<HTMLInputElement>) => 
+  //   (e: React.ChangeEvent<HTMLInputElement>) =>
   //     setSocketUrl(e.target.value),
   //   []
   // );
 
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Enter Your Websocket URL Here:
-        </p>
-        <input type="text" value={socketUrl}
-        onChange={(e) => {
-          setSocketUrl(e.target.value)
-        }}
-        />
-        <button onClick={() => initWebSocket()}>Hullo</button>
-      </header>
+      <p className="connection-status">{ConnectionStatus[connectionStatus]}</p>
+
+      {connectionStatus === ConnectionStatus.Disconnected ? (
+        <div className="connection-prompt">
+          <TextField
+            sx={{ mb: "1rem" }}
+            label="Enter Your Websocket URL Here"
+            type="text"
+            value={socketUrl}
+            variant="outlined"
+            onChange={(e) => {
+              setSocketUrl(e.target.value);
+            }}
+            fullWidth
+          />
+          <Button variant="outlined" onClick={() => initWebSocket()}>
+            Connect
+          </Button>
+        </div>
+      ) : (
+        connectionStatus === ConnectionStatus.Connected && (
+          <div className="connection-manager">
+            <p>Messages: </p>
+            <Button>Disconnect</Button>
+          </div>
+        )
+      )}
     </div>
   );
 }
